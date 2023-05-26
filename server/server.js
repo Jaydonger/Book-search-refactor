@@ -1,7 +1,9 @@
 const express = require('express');
 const path = require('path');
 const db = require('./config/connection');
-const routes = require('./routes');
+// const routes = require('./routes'); bad routes get commented out!
+const { ApolloServer } = require('apollo-server-express');
+const { typeDefs, resolvers } = require('./schemas') // importing our new api requests variables
 
 const app = express();
 const PORT = process.env.PORT || 3001;
