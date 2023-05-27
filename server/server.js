@@ -4,6 +4,7 @@ const db = require('./config/connection');
 // const routes = require('./routes'); bad routes get commented out!
 const { ApolloServer } = require('apollo-server-express');
 const { typeDefs, resolvers } = require('./schemas') // importing our new api requests variables
+const { authMiddleware } = require('./utils/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3001;
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  context: authMiddleware,
 });
 
 app.use(express.urlencoded({ extended: true }));
