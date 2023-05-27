@@ -19,11 +19,11 @@ const resolvers = {
         login: async (parent, { email, password }) => {
             const user = await User.findOne({ email });
             if (!user) {
-                throw new AuthenticationError("No Account Found With That Information!");
+                throw new AuthenticationError("No account found with that information!");
             }
             const correctPassword = await user.isCorrectPassword(password);
             if (!correctPassword) {
-                throw new AuthenticationError("Incorrect Password");
+                throw new AuthenticationError("Incorrect password");
             }
             const token = signToken(user);
             return { token, user };
@@ -53,7 +53,7 @@ const resolvers = {
                 );
                 return updatedUser;
             }
-            throw new AuthenticationError("Must Be Logged In!");
+            throw new AuthenticationError("Must be logged in!");
         },
     },
 };
