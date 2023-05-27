@@ -1,15 +1,20 @@
 const express = require('express');
-const path = require('path');
-const db = require('./config/connection');
-// const routes = require('./routes'); bad routes get commented out!
-const { ApolloServer } = require('apollo-server-express');
-const { typeDefs, resolvers } = require('./schemas') // importing our new api requests variables
-const { authMiddleware } = require('./utils/auth');
 
+// needs ApolloServer
+const { ApolloServer } = require('apollo-server-express');
+const path = require('path');
+// needs typeDefs and resolvers
+const { typeDefs, resolvers } = require('./schemas')
+const { authMiddleware } = require('./utils/auth');
+const db = require('./config/connection');
+// does not need routes
+// const routes = require('./routes');
+
+// dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// instantiating server with request variables
+// needs server connection to ApolloServer
 const server = new ApolloServer({
   typeDefs,
   resolvers,
@@ -24,6 +29,13 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
 }
 
+// not using routes
+// app.use(routes);
+
+// reformatting
+// db.once('open', () => {
+//   app.listen(PORT, () => console.log(`🌍 Now listening on localhost:${PORT}`));
+// });
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/build/index.html'));
@@ -41,4 +53,5 @@ const startApolloServer = async () => {
   });
 };
 
+// should now be constructed to work with ApolloServer
 startApolloServer();

@@ -1,86 +1,61 @@
 const { AuthenticationError } = require('apollo-server-express');
-const { User, Book } = require('../models');
+const { User } = require('../models');
 const { signToken } = require('../utils/auth');
 
 const resolvers = {
-  Query: {
-    me: async (parent, args, context) => {
-      if (context.user) {
-        const userData = await User.findOne({ _id: context.user._id }).select(
-          '-__v -password'
-        );
-        return userData;
-      }
-      throw new AuthenticationError('Not logged in');
+    Query: {
+        myBooks: async (parent, args, context) => {
+            if (context.user) {
+                const userData = await User.findOne({ _id: context.user._id })
+                    .select("-__v -password");
+                return userData;
+            }
+            throw new AuthenticationError("Failed To Log In")
+        },
     },
-  },
+    Mutation: {
+        login: async (parent, { email, password }) => {
+            const user = await User.findOne({ email });
+            if (!user) {
+                throw new AuthenticationError("No Account Exists With That Information!");
+            }
+            const correctPassword = await user.isCorrectPassword(password);
 
-  Mutation: {
-    addUser: async (parent, { username, email, password }) => {
-      // First we create the user
-      const user = await User.create({ username, email, password });
-      // To reduce friction for the user, we immediately sign a JSON Web Token and log the user in after they are created
-      const token = signToken(user);
-      // Return an `Auth` object that consists of the signed token and user's information
-      return { token, user };
+            if (!correctPassword) {
+                throw new AuthenticationError("Incorrect Password");
+            }
+            const token = signToken(user);
+            return { token, user };
+        },
+        createUser: async (parent, args) => {
+            const user = await User.create(args);
+            const token = signToken(user);
+            return { token, user };
+        },
+        saveBook: async (parent, { input }, context) => {
+            // console.log(context.user);
+            if (context.user) {
+                const updatedUser = await User.findOneAndUpdate(
+                    { _id: context.user._id },
+                    { $addToSet: { savedBooks: input } },
+                    { new: true, runValidators: true }
+                );
+                return updatedUser;
+            }
+            throw new AuthenticationError("Must Be Logged In!");
+        },
+        removeBook: async (parent, { bookId }, context) => {
+            if (context.user) {
+                const updatedUser = await User.findByIdAndUpdate(
+                    { _id: context.user._id },
+                    { $pull: { savedBooks: { bookId: bookId } } },
+                    { new: true }
+                );
+                return updatedUser;
+            }
+            throw new AuthenticationError("Must Be Logged In!");
+        },
     },
-    login: async (parent, { email, password }) => {
-      // Look up the user by the provided email address. Since the `email` field is unique, we know that only one person will exist with that email
-      const user = await User.findOne({ email });
-
-      // If there is no user with that email address, return an Authentication error stating so
-      if (!user) {
-        throw new AuthenticationError('No user found with this email address');
-      }
-
-      // If there is a user found, execute the `isCorrectPassword` instance method and check if the correct password was provided
-      const correctPw = await user.isCorrectPassword(password);
-
-      // If the password is incorrect, return an Authentication error stating so
-      if (!correctPw) {
-        throw new AuthenticationError('Incorrect credentials');
-      }
-
-      // If email and password are correct, sign user into the application with a JWT
-      const token = signToken(user);
-
-      // Return an `Auth` object that consists of the signed token and user's information
-      return { token, user };
-    },
-    saveBook: async (parent, { book }, context) => {
-      console.log(book);
-      console.log('user_id', context.user._id);
-      if (context.user) {
-        return await User.findOneAndUpdate(
-          { _id: context.user._id },
-          {
-            $addToSet: {
-              savedBooks: {
-                bookId: book.bookId,
-                authors: book.authors,
-                description: book.description,
-                image: book.image,
-                link: book.link,
-                title: book.title,
-              },
-            },
-          },
-          { new: true }
-        );
-      }
-      throw new AuthenticationError('You need to log in.');
-    },
-
-    removeBook: async (parent, { bookId }, context) => {
-      if (context.user) {
-        return User.findOneAndUpdate(
-          { _id: context.user._id },
-          { $pull: { savedBooks: { bookId } } }
-        );
-      }
-      throw new AuthenticationError('You need to log in.');
-    },
-  },
 };
 
 module.exports = resolvers;
