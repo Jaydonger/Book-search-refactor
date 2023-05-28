@@ -8,33 +8,39 @@ import {
   Col
 } from 'react-bootstrap';
 
+// removing references from utils/API
+// import { getMe, deleteBook } from '../utils/API';
+// importing Apollo stuff
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_ME } from '../utils/queries';
+import { GET_MY_BOOKS } from '../utils/queries';
 import { REMOVE_BOOK } from '../utils/mutations';
 
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
 
 const SavedBooks = () => {
-  const { loading, data } = useQuery(GET_ME);
-  const [deleteBook] = useMutation(REMOVE_BOOK);
-  console.log('data = ', data);
-  // while data is loading, assign userData an empty object to prevent trying to read undefined data.me
-  const userData = data?.me || {};
+  // refactoring for mutations and queries
+  const { loading, data } = useQuery(GET_MY_BOOKS);
+  let userData = data?.myBooks || {};
+  console.log(userData);
+  const [removeBook] = useMutation(REMOVE_BOOK);
 
   // create function that accepts the book's mongo _id value as param and deletes the book from the database
   const handleDeleteBook = async (bookId) => {
     const token = Auth.loggedIn() ? Auth.getToken() : null;
+
     if (!token) {
       return false;
     }
 
     try {
-      const { data } = await deleteBook({
-        variables: { bookId },
+      const { user } = await removeBook({
+        variables: {
+          bookId: bookId,
+        },
       });
 
-      // upon success, remove book's id from localStorage
+      userData = user;
       removeBookId(bookId);
     } catch (err) {
       console.error(err);
